@@ -33,7 +33,7 @@ trait Pk10BM
                 $validNums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
                 $headSum = array_sum(array_slice($validNums, 0, $this->span));
                 $tailSum = array_sum(array_slice($validNums, -$this->span));
-                $midNum = intval(($headSum + $tailSum) / 2);
+                $midNum = (int)(($headSum + $tailSum) / 2);
                 $sWinningNumber = $this->getPk10WinNumber($sWinningNumber);
                 $res = [];
                 foreach ($sWinningNumber as $_number) {
