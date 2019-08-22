@@ -43,7 +43,7 @@ trait Pk10BM
                 $result = implode($this->splitChar, $res);
                 break;
             case 'Pksumsum'://获取和值的中奖号码 getWnNumberPksumsum
-                $result = $this->getPk10WinNumber($sWinningNumber);
+                $result = array_sum($this->getPk10WinNumber($sWinningNumber));
                 break;
             default:
                 $result = false;
