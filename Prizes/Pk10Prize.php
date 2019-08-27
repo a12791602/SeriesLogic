@@ -63,7 +63,8 @@ trait Pk10Prize
                 $betNumbers = explode($this->splitChar, $sBetNumber);
                 $winNumbers = str_split($sWnNumber);
                 $iCount = 0;
-                for ($i = 0, $iMax = count($betNumbers); $i < $iMax; $i++) {
+                $iMax = count($betNumbers);
+                for ($i = 0;  $i < $iMax; $i++) {
                     $bNumbers = str_split($betNumbers[$i]);
                     if (isset($winNumbers[$i]) && in_array((string)$winNumbers[$i], $bNumbers, true)) {
                         ++$iCount;

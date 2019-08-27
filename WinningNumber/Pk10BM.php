@@ -33,7 +33,7 @@ trait Pk10BM
                 $validNums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
                 $headSum = array_sum(array_slice($validNums, 0, $this->span));
                 $tailSum = array_sum(array_slice($validNums, -$this->span));
-                $midNum = intval(($headSum + $tailSum) / 2);
+                $midNum = (int)(($headSum + $tailSum) / 2);
                 $sWinningNumber = $this->getPk10WinNumber($sWinningNumber);
                 $res = [];
                 foreach ($sWinningNumber as $_number) {
@@ -43,7 +43,7 @@ trait Pk10BM
                 $result = implode($this->splitChar, $res);
                 break;
             case 'Pksumsum'://获取和值的中奖号码 getWnNumberPksumsum
-                $result = $this->getPk10WinNumber($sWinningNumber);
+                $result = array_sum($this->getPk10WinNumber($sWinningNumber));
                 break;
             default:
                 $result = false;
