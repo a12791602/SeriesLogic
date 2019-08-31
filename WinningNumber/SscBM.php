@@ -8,7 +8,6 @@
 
 namespace App\models\Game\Lottery\Logics\SeriesLogic\WinningNumber;
 
-
 trait SscBM
 {
     /**
@@ -59,7 +58,7 @@ trait SscBM
                 $iMaxRepeatCount = max($aDigitalCount);
                 $iMinRepeatCount = min($aDigitalCount);
                 $iUniqueCount = count($aDigitalCount);
-                if ($iUniqueCount == $this->unique_count && $iMaxRepeatCount == $this->max_repeat_time && $iMinRepeatCount == $this->min_repeat_time) {
+                if ($iUniqueCount === $this->unique_count && $iMaxRepeatCount === $this->max_repeat_time && $iMinRepeatCount === $this->min_repeat_time) {
                     sort($aDigitals);
                     $result = implode($aDigitals);
                 } else {
@@ -86,12 +85,12 @@ trait SscBM
                 if ($this->span !== null) {
                     $aDigitals = str_split($sWinningNumber);
                     $iSpan = max($aDigitals) - min($aDigitals);
-                    if ($iSpan == $this->span) {
+                    if ((int)$iSpan === $this->span) {
                         if ($this->min_span) {
                             $iDigitalCount = count($aDigitals);
                             $aSpan = [];
-                            for ($i = 1; $i < $iDigitalCount; $aSpan[] = abs($aDigitals[$i] - $aDigitals[$i++ - 1])) {
-
+                            for ($i = 1; $i < $iDigitalCount; $i++) {
+                                $aSpan[] = abs($aDigitals[$i] - $aDigitals[$i - 1]);
                             }
                             $aDigitals[] = abs($aDigitals[0] - $aDigitals[$iDigitalCount - 1]);
                             min($aSpan) === $this->min_span or $sWinningNumber = '';
