@@ -63,6 +63,7 @@ trait Pk10BM
         if ($subtract !== 0) {
             foreach ($iFullWinningNumber as $i => $num) {
                 $iFullWinningNumber[$i] -= $subtract;
+                unset($num);
             }
         }
         return $iFullWinningNumber;

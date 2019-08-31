@@ -8,7 +8,6 @@
 
 namespace App\models\Game\Lottery\Logics\SeriesLogic\WinningNumber;
 
-
 use App\Lib\Game\DigitalNumber;
 
 trait K3BM
