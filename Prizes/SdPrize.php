@@ -8,7 +8,6 @@
 
 namespace App\models\Game\Lottery\Logics\SeriesLogic\Prizes;
 
-
 use App\Lib\Game\DigitalNumber;
 use App\Lib\Game\Math;
 use App\Models\Game\Lottery\LotterySeriesWay;
@@ -66,8 +65,9 @@ trait SdPrize
                     $aWnMaxs = array_keys($aWnDigitals, $this->max_repeat_time);
                     $aWnMins = array_keys($aWnDigitals, $this->min_repeat_time);
                     $aDiffMax = array_diff($aWnMaxs, str_split($aBetNumber[0]));
-                    $aDiffMin = isset($aBetNumber[1]) ? array_diff($aWnMins,
-                        str_split($aBetNumber[1])) : array_diff($aWnMins, str_split($aBetNumber[0]));
+                    $aDiffMin0 = array_diff($aWnMins, str_split($aBetNumber[0]));
+                    $aDiffMin1 = array_diff($aWnMins, str_split($aBetNumber[1]));
+                    $aDiffMin = isset($aBetNumber[1]) ? $aDiffMin1 : $aDiffMin0;
                     $result = (int)(empty($aDiffMax) && empty($aDiffMin));
                 }
                 break;
@@ -85,7 +85,7 @@ trait SdPrize
                 $result = count($aKeys);
                 break;
             case 'prizeMultiOneEqual'://返回定位胆的中奖注数
-                $result = (int)preg_match("/$sWnNumber/", $sBetNumber);
+                $result = (int)preg_match('/'.$sWnNumber.'/', $sBetNumber);
                 break;
             case 'prizeNecessaryCombin'://返回组选包胆的中奖注数
                 $aWnDigitals = array_unique(str_split($sWnNumber));

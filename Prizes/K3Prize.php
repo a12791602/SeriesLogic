@@ -8,7 +8,6 @@
 
 namespace App\models\Game\Lottery\Logics\SeriesLogic\Prizes;
 
-
 use App\Lib\Game\DigitalNumber;
 use App\Lib\Game\Math;
 use App\Models\Game\Lottery\LotterySeriesWay;

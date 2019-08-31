@@ -8,7 +8,6 @@
 
 namespace App\models\Game\Lottery\Logics\SeriesLogic\Prizes;
 
-
 use App\Lib\Game\Math;
 use App\Models\Game\Lottery\LotterySeriesWay;
 use Illuminate\Support\Facades\Log;
@@ -58,7 +57,7 @@ trait LottoPrize
                 foreach ($aBets as $sBet) {
                     $aTmpBalls = explode($this->splitCharInArea, $sBet);
                     $aHitBalls = array_intersect($aTmpBalls, $aWnBalls);
-                    if ($bWon = (count($aHitBalls) === $this->wn_length)) {
+                    if (count($aHitBalls) === $this->wn_length) {
                         $iCount++;
                     }
                 }
