@@ -8,7 +8,6 @@
 
 namespace App\models\Game\Lottery\Logics\SeriesLogic\Prizes;
 
-use App\Lib\Game\DigitalNumber;
 use App\Lib\Game\Math;
 use App\Models\Game\Lottery\LotterySeriesWay;
 use Illuminate\Support\Facades\Log;
@@ -64,7 +63,7 @@ trait Pk10Prize
                 $winNumbers = str_split($sWnNumber);
                 $iCount = 0;
                 $iMax = count($betNumbers);
-                for ($i = 0;  $i < $iMax; $i++) {
+                for ($i = 0; $i < $iMax; $i++) {
                     $bNumbers = str_split($betNumbers[$i]);
                     if (isset($winNumbers[$i]) && in_array((string)$winNumbers[$i], $bNumbers, true)) {
                         ++$iCount;
@@ -109,7 +108,7 @@ trait Pk10Prize
                         if (!is_numeric($betNumber) || ($betNumber < $iMin || $betNumber > $iMax)) {
                             continue;
                         }
-                        if ($betNumber == $sWnNumber) {
+                        if ($betNumber === $sWnNumber) {
                             ++$iWinCount;
                         }
                     }

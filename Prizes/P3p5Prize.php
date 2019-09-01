@@ -66,8 +66,9 @@ trait P3p5Prize
                     $aWnMaxs = array_keys($aWnDigitals, $this->max_repeat_time);
                     $aWnMins = array_keys($aWnDigitals, $this->min_repeat_time);
                     $aDiffMax = array_diff($aWnMaxs, str_split($aBetNumber[0]));
-                    $aDiffMin = isset($aBetNumber[1]) ? array_diff($aWnMins,
-                        str_split($aBetNumber[1])) : array_diff($aWnMins, str_split($aBetNumber[0]));
+                    $aDiffMin1 = array_diff($aWnMins, str_split($aBetNumber[1]));
+                    $aDiffMin0 = array_diff($aWnMins, str_split($aBetNumber[0]));
+                    $aDiffMin = isset($aBetNumber[1]) ? $aDiffMin1 : $aDiffMin0;
                     $result = (int)(empty($aDiffMax) && empty($aDiffMin));
                 }
                 break;
@@ -98,7 +99,7 @@ trait P3p5Prize
                 $result = (int)in_array((string)$iSum, $aBetNumbers, true);
                 break;
             case 'prizeMultiOneEqual'://返回定位胆的中奖注数
-                $result = (int)preg_match("/$sWnNumber/", $sBetNumber);
+                $result = (int)preg_match('/'.$sWnNumber.'/', $sBetNumber);
                 break;
             default:
                 Log::channel('issues')->info('需要添加排列35系列方法:'.$sFunction.$oSeriesWay->toJson());
