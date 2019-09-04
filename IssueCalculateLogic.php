@@ -351,9 +351,11 @@ trait IssueCalculateLogic
                         'proxy_ip' => $oTraceList->proxy_ip,
                         'bet_from' => $oTraceList->bet_from,
                         'time_bought' => time(),
+                        'status_flow' => Project::STATUS_FLOW_TRACE,
                     ];
                     $projectId = Project::create($projectData)->id;
                     $oTraceList->project_id = $projectId;
+                    $oTraceList->project_serial_number = $projectData['serial_number'];
                     $oTraceList->status = LotteryTraceList::STATUS_RUNNING;
                     $oTraceList->save();
                     $TraceDetailUpdateData = [
@@ -386,8 +388,8 @@ trait IssueCalculateLogic
             //第一次的时候是没有的
             $oTraceListFromProject = $oProject->tracelist;
             $oTraceListFromProject->status = LotteryTraceList::STATUS_FINISHED;
-            $oTraceListFromProject->project_id = $oProject->id;
-            $oTraceListFromProject->project_serial_number = $oProject->serial_number;
+            // $oTraceListFromProject->project_id = $oProject->id;
+            // $oTraceListFromProject->project_serial_number = $oProject->serial_number;
             $oTraceListFromProject->save();
         }
     }
