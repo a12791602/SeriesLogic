@@ -22,6 +22,34 @@ use Illuminate\Support\Facades\Log;
 
 trait IssueCalculateLogic
 {
+    private static $projectInsertCompileColumn = [
+        'user_id',
+        'username',
+        'top_id',
+        'rid',
+        'parent_id',
+        'is_tester',
+        'series_id',
+        'lottery_sign',
+        'method_sign',
+        'method_group',
+        'method_name',
+        'user_prize_group',
+        'bet_prize_group',
+        'mode',
+        'times',
+        'price',
+        'total_cost',
+        'bet_number',
+        'issue',
+        'prize_set',
+        'ip',
+        'proxy_ip',
+        'bet_from',
+        'challenge_prize',
+        'challenge',
+    ];
+
     /**
      * @param  string  $lottery_id
      * @param  string  $issue_no
@@ -324,35 +352,11 @@ trait IssueCalculateLogic
                 $oTrace = $oTraceList->trace;
                 if ($oTraceList->status === LotteryTraceList::STATUS_WAITING) {
 //停止了就不加追号了
-                    //添加到 project 表
-                    $projectData = [
-                        'serial_number' => Project::getProjectSerialNumber(),
-                        'user_id' => $oTraceList->user_id,
-                        'username' => $oTraceList->username,
-                        'top_id' => $oTraceList->top_id,
-                        'rid' => $oTraceList->rid,
-                        'parent_id' => $oTraceList->parent_id,
-                        'is_tester' => $oTraceList->is_tester,
-                        'series_id' => $oTraceList->series_id,
-                        'lottery_sign' => $oTraceList->lottery_sign,
-                        'method_sign' => $oTraceList->method_sign,
-                        'method_group' => $oTraceList->method_group,
-                        'method_name' => $oTraceList->method_name,
-                        'user_prize_group' => $oTraceList->user_prize_group,
-                        'bet_prize_group' => $oTraceList->bet_prize_group,
-                        'mode' => $oTraceList->mode,
-                        'times' => $oTraceList->times,
-                        'price' => $oTraceList->single_price,
-                        'total_cost' => $oTraceList->total_price,
-                        'bet_number' => $oTraceList->bet_number,
-                        'issue' => $oTraceList->issue,
-                        'prize_set' => $oTraceList->prize_set,
-                        'ip' => $oTraceList->ip,
-                        'proxy_ip' => $oTraceList->proxy_ip,
-                        'bet_from' => $oTraceList->bet_from,
-                        'time_bought' => time(),
-                        'status_flow' => Project::STATUS_FLOW_TRACE,
-                    ];
+                    //从追号列表添加到 project 表
+                    $projectData = self::getProjectDataFromTraceLists($oTraceList);
+                    $projectData['serial_number'] = Project::getProjectSerialNumber();
+                    $projectData['time_bought'] = time();
+                    $projectData['status_flow'] = Project::STATUS_FLOW_TRACE;
                     $projectId = Project::create($projectData)->id;
                     $oTraceList->project_id = $projectId;
                     $oTraceList->project_serial_number = $projectData['serial_number'];
@@ -367,6 +371,20 @@ trait IssueCalculateLogic
                 Log::channel('issues')->info('追号统计列表信息失踪');
             }
         }
+    }
+
+    /**
+     * 从追号列表添加到 project 表
+     * @param  LotteryTraceList  $oTraceList
+     * @return array
+     */
+    private static function getProjectDataFromTraceLists(LotteryTraceList $oTraceList): array
+    {
+        $projectData = [];
+        foreach (self::$projectInsertCompileColumn as $column) {
+            $projectData[$column] = $oTraceList->$column;
+        }
+        return $projectData;
     }
 
     /**
