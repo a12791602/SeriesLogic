@@ -6,7 +6,7 @@
  * Time: 4:38 PM
  */
 
-namespace App\models\Game\Lottery\Logics\SeriesLogic\Prizes;
+namespace App\Models\Game\Lottery\Logics\SeriesLogic\Prizes;
 
 use App\Lib\Game\DigitalNumber;
 use App\Lib\Game\Math;
