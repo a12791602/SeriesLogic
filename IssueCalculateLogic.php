@@ -207,14 +207,14 @@ trait IssueCalculateLogic
      * @param  LotterySeriesWay  $oSeriesWay
      * @param  Project  $project
      * @param  LotteryIssue  $oIssue
-     * @param  string  $sWnNumber
+     * @param  mixed  $sWnNumber
      */
     private static function handleBySeriesHasWinningNumber(
         LotteryBasicWay $oBasicWay,
         LotterySeriesWay $oSeriesWay,
         Project $project,
         LotteryIssue $oIssue,
-        string $sWnNumber
+        $sWnNumber
     ): void {
         try {
             $aPrized = $oBasicWay->checkPrize(
@@ -363,7 +363,6 @@ trait IssueCalculateLogic
                     ];
                     $oTrace->update($TraceDetailUpdateData);
                 }
-                //##############################################################
             } else {
                 Log::channel('issues')->info('追号统计列表信息失踪');
             }
