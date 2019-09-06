@@ -17,6 +17,7 @@ use App\Models\Game\Lottery\LotteryTraceList;
 use App\Models\LotteryTrace;
 use App\Models\Project;
 use App\Models\User\UserCommissions;
+use App\Models\User\Fund\FrontendUsersAccount;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -44,6 +45,7 @@ trait IssueCalculateLogic
                     Log::channel('issues')->info('Winning Number Canceled, Set To Finished');
                 } else {
                     self::handleUnencodedProjects($oIssue, $lottery_id, $oLottery);
+                    self::handleTraceWithCurrentIssue($oLottery); //把该彩种当前奖期的追号插入到project进行
                 }
             }
         } else {
@@ -135,7 +137,8 @@ trait IssueCalculateLogic
             )->get();
         foreach ($oSeriesWays as $oSeriesWay) {
             $oSeriesWay->setWinningNumber($aWnNumberOfMethods);
-            self::handleByProjectFiltered($oProjects, $oSeriesWay, $oIssue, $oLottery);
+            self::handleByProjectFiltered($oProjects, $oSeriesWay, $oIssue);
+            //self::handleByProjectFiltered($oProjects, $oSeriesWay, $oIssue, $oLottery);
         }
     }
 
@@ -143,33 +146,28 @@ trait IssueCalculateLogic
      * @param  Collection  $oProjects
      * @param  LotterySeriesWay  $oSeriesWay
      * @param  LotteryIssue  $oIssue
-     * @param  LotteryList  $oLottery
      */
     private static function handleByProjectFiltered(
         Collection $oProjects,
         LotterySeriesWay $oSeriesWay,
-        LotteryIssue $oIssue,
-        LotteryList $oLottery
+        LotteryIssue $oIssue
+        //LotteryList $oLottery
     ): void {
-        $oProjectsToCalculate = $oProjects->where(
-            'status',
-            Project::STATUS_NORMAL
-        )
-            ->where(
-                'method_sign',
-                $oSeriesWay->lottery_method_id
-            );
+        $oProjectsToCalculate = $oProjects->where('status',Project::STATUS_NORMAL)
+            ->where('method_sign',$oSeriesWay->lottery_method_id);
+
         if ($oProjectsToCalculate->count() >= 1) {
             //不中奖的时候
             if ($oSeriesWay->WinningNumber === false) {
                 foreach ($oProjectsToCalculate as $project) {
                     $project->setFail($oIssue->official_code);
-                    self::startTrace($oLottery, $project);
+                    self::startTrace($project); //self::startTrace($oLottery, $project);
                     UserCommissions::sendCommissions($project->id);
                 }
             } else {
                 //中奖的时候
-                self::calculateWinningNumber($oSeriesWay, $oProjectsToCalculate, $oLottery, $oIssue);
+                self::calculateWinningNumber($oSeriesWay, $oProjectsToCalculate, $oIssue);
+                //self::calculateWinningNumber($oSeriesWay, $oProjectsToCalculate, $oLottery, $oIssue);
             }
         } else {
             Log::channel('issues')->info('Dont have projects');
@@ -179,13 +177,12 @@ trait IssueCalculateLogic
     /**
      * @param  LotterySeriesWay  $oSeriesWay
      * @param  Collection  $oProjectsToCalculate
-     * @param  LotteryList  $oLottery
      * @param  LotteryIssue  $oIssue
      */
     private static function calculateWinningNumber(
         LotterySeriesWay $oSeriesWay,
         Collection $oProjectsToCalculate,
-        LotteryList $oLottery,
+        //LotteryList $oLottery,
         LotteryIssue $oIssue
     ): void {
         //中奖的时候
@@ -194,7 +191,7 @@ trait IssueCalculateLogic
             $oBasicWay = $oSeriesWay->basicWay;
             foreach ($oProjectsToCalculate as $project) {
                 self::handleBySeriesHasWinningNumber($oBasicWay, $oSeriesWay, $project, $oIssue, $sWnNumber);
-                self::startTrace($oLottery, $project);
+                self::startTrace($project); //self::startTrace($oLottery, $project);
                 UserCommissions::sendCommissions($project->id);
             }
         } else {
@@ -266,31 +263,35 @@ trait IssueCalculateLogic
     }
 
     /**
-     * @param  LotteryList  $oLottery
+     * public static function startTrace(LotteryList $oLottery, Project $project): void
+     * $oLottery没用到了，代码规范 暂时去掉
      * @param  Project  $project
      */
-    public static function startTrace(LotteryList $oLottery, Project $project): void
+    public static function startTrace(Project $project): void
     {
         $oProject = $project->fresh();
-        $oTrace = self::getTraceItems($oProject, $first);
+        $oTrace = self::getTraceItems($oProject);
         if ($oTrace !== null) {
             ++$oTrace->finished_issues; //完成的奖期+1
             $oTrace->finished_amount += $oProject->total_cost; //完成的金额
             $oTrace->finished_bonus += $oProject->bonus; //追号中奖总金额
             if ($oProject->status >= Project::STATUS_WON && $oTrace->win_stop === 1) {
                 self::traceWinStop($oTrace, $oProject);//中奖即停
-            } elseif ($oProject->status > Project::STATUS_NORMAL && $first < 1) {//不是第一次的时候
-                self::traceNormalConditionUpdate($oTrace, $oProject);//正常情况下不是第一次的时候
+            //} elseif ($oProject->status > Project::STATUS_NORMAL && $first < 1) {//不是第一次的时候
+            } elseif ($oProject->status > Project::STATUS_NORMAL) { //追号逻辑变动   不管是第几期追号处理业务逻辑都一样 $first取消
+                self::traceNormalConditionUpdate($oTrace, $oProject);
             }
         }
-        self::handleTraceWithCurrentIssue($oLottery, $oProject);
+        //self::handleTraceWithCurrentIssue($oLottery, $oProject);上期开奖时就要将本期的追号加入project，所以放到一开始时进行
     }
 
     /**
+     * private static function handleTraceWithCurrentIssue(LotteryList $oLottery, Project $oProject): void
+     * 改成全部追号统一处理   所以不需要$oProject->user_id
      * @param  LotteryList  $oLottery
      * @param  Project  $oProject
      */
-    private static function handleTraceWithCurrentIssue(LotteryList $oLottery, Project $oProject): void
+    public static function handleTraceWithCurrentIssue(LotteryList $oLottery)
     {
         //get current issues
         $currentIssue = LotteryIssue::getCurrentIssue($oLottery->en_name);
@@ -300,13 +301,13 @@ trait IssueCalculateLogic
             $oTraceListEloq = $currentIssue->tracelists()->where([
                 ['lottery_sign', '=', $oLottery->en_name],
                 ['status', '=', LotteryTraceList::STATUS_WAITING],
-                ['user_id', '=', $oProject->user_id],
+                //['user_id', '=', $oProject->user_id],
             ])
                 ->get();
             Log::channel('trace')->info($oTraceListEloq->toJson());
             //check if it is not empty then do other logics
             if (!$oTraceListEloq->isEmpty()) {
-                self::addProjectDataByTrace($oTraceListEloq);
+                return self::addProjectDataByTrace($oTraceListEloq);
             }
         } else {
             Log::channel('issues')->info('no issue or no tracelists');
@@ -316,7 +317,7 @@ trait IssueCalculateLogic
     /**
      * @param  Collection  $oTraceListEloq
      */
-    private static function addProjectDataByTrace(Collection $oTraceListEloq): void
+    private static function addProjectDataByTrace(Collection $oTraceListEloq)
     {
         //loop ,select and then insert to project table and update the trace detail table
         foreach ($oTraceListEloq as $oTraceList) {
@@ -324,44 +325,19 @@ trait IssueCalculateLogic
                 $oTrace = $oTraceList->trace;
                 if ($oTraceList->status === LotteryTraceList::STATUS_WAITING) {
 //停止了就不加追号了
-                    //添加到 project 表
-                    $projectData = [
-                        'serial_number' => Project::getProjectSerialNumber(),
-                        'user_id' => $oTraceList->user_id,
-                        'username' => $oTraceList->username,
-                        'top_id' => $oTraceList->top_id,
-                        'rid' => $oTraceList->rid,
-                        'parent_id' => $oTraceList->parent_id,
-                        'is_tester' => $oTraceList->is_tester,
-                        'series_id' => $oTraceList->series_id,
-                        'lottery_sign' => $oTraceList->lottery_sign,
-                        'method_sign' => $oTraceList->method_sign,
-                        'method_group' => $oTraceList->method_group,
-                        'method_name' => $oTraceList->method_name,
-                        'user_prize_group' => $oTraceList->user_prize_group,
-                        'bet_prize_group' => $oTraceList->bet_prize_group,
-                        'mode' => $oTraceList->mode,
-                        'times' => $oTraceList->times,
-                        'price' => $oTraceList->single_price,
-                        'total_cost' => $oTraceList->total_price,
-                        'bet_number' => $oTraceList->bet_number,
-                        'issue' => $oTraceList->issue,
-                        'prize_set' => $oTraceList->prize_set,
-                        'ip' => $oTraceList->ip,
-                        'proxy_ip' => $oTraceList->proxy_ip,
-                        'bet_from' => $oTraceList->bet_from,
-                        'time_bought' => time(),
-                        'status_flow' => Project::STATUS_FLOW_TRACE,
-                    ];
-                    $projectId = Project::create($projectData)->id;
-                    $oTraceList->project_id = $projectId;
-                    $oTraceList->project_serial_number = $projectData['serial_number'];
+                    FrontendUsersAccount::traceThaw($oTraceList); //先解冻追号金额
+                     //添加到 project 表
+                    $projectData = self::getProjectData($oTraceList);
+                    $project = new Project();
+                    $project->fill($projectData);
+                    $project->save();
+                    $oTraceList->project_id = $project->id;
+                    $oTraceList->project_serial_number = $project->serial_number;
                     $oTraceList->status = LotteryTraceList::STATUS_RUNNING;
-                    $oTraceList->save();
-                    $TraceDetailUpdateData = [
-                        'now_issue' => $oTraceList->issue,
-                    ];
-                    $oTrace->update($TraceDetailUpdateData);
+                    $oTraceList->save(); // TraceList
+                    $TraceDetailUpdateData = ['now_issue' => $oTraceList->issue,];
+                    $oTrace->update($TraceDetailUpdateData); // Trace
+                    return FrontendUsersAccount::betDeduction($project); //投注扣款
                 }
             } else {
                 Log::channel('issues')->info('追号统计列表信息失踪');
@@ -369,26 +345,54 @@ trait IssueCalculateLogic
         }
     }
 
+    public static function getProjectData($oTraceList)
+    {
+        return [
+            'serial_number' => Project::getProjectSerialNumber(),
+            'user_id' => $oTraceList->user_id,
+            'username' => $oTraceList->username,
+            'top_id' => $oTraceList->top_id,
+            'rid' => $oTraceList->rid,
+            'parent_id' => $oTraceList->parent_id,
+            'is_tester' => $oTraceList->is_tester,
+            'series_id' => $oTraceList->series_id,
+            'lottery_sign' => $oTraceList->lottery_sign,
+            'method_sign' => $oTraceList->method_sign,
+            'method_group' => $oTraceList->method_group,
+            'method_name' => $oTraceList->method_name,
+            'user_prize_group' => $oTraceList->user_prize_group,
+            'bet_prize_group' => $oTraceList->bet_prize_group,
+            'mode' => $oTraceList->mode,
+            'times' => $oTraceList->times,
+            'price' => $oTraceList->single_price,
+            'total_cost' => $oTraceList->total_price,
+            'bet_number' => $oTraceList->bet_number,
+            'issue' => $oTraceList->issue,
+            'prize_set' => $oTraceList->prize_set,
+            'ip' => $oTraceList->ip,
+            'proxy_ip' => $oTraceList->proxy_ip,
+            'bet_from' => $oTraceList->bet_from,
+            'time_bought' => time(),
+            'status_flow' => Project::STATUS_FLOW_TRACE,
+        ];
+    }
     /**
      * @param  LotteryTrace  $oTrace
      * @param  Project  $oProject
      */
     private static function traceNormalConditionUpdate(LotteryTrace $oTrace, Project $oProject): void
     {
-//不是第一次的时候
         $waitingNum = $oTrace->traceLists->where('status', LotteryTraceList::STATUS_WAITING)->count();
         if ($waitingNum === 0) {
-            //如果没有等待追号的数据，则追号完成
-            $oTrace->status = LotteryTrace::STATUS_FINISHED;
+            $oTrace->status = LotteryTrace::STATUS_FINISHED;//如果没有等待追号的数据，则追号完成
         }
         $oTrace->save();
         //update TraceLists with Project
         if ($oProject->tracelist()->exists()) {
-            //第一次的时候是没有的
             $oTraceListFromProject = $oProject->tracelist;
             $oTraceListFromProject->status = LotteryTraceList::STATUS_FINISHED;
-            // $oTraceListFromProject->project_id = $oProject->id;
-            // $oTraceListFromProject->project_serial_number = $oProject->serial_number;
+            // $oTraceListFromProject->project_id = $oProject->id;    //生成TraceList时已经放入ProjectId
+            // $oTraceListFromProject->project_serial_number = $oProject->serial_number;    //生成TraceList时已经放入ProjectNumber
             $oTraceListFromProject->save();
         }
     }
@@ -401,34 +405,37 @@ trait IssueCalculateLogic
     {
         //Remaining TraceList to stop continuing
         $oTraceListToUpdate = $oTrace->traceRunningLists();
+        $oTraceList = $oTraceListToUpdate->get();
         $traceListStopData = [
             'status' => LotteryTraceList::STATUS_WIN_STOPED,
         ];
         $oTraceListToUpdate->update($traceListStopData);
         //Update TraceDetail tables
         $oTrace->status = LotteryTrace::STATUS_WIN_STOPED;
-        $oTrace->canceled_issues = $oTraceListToUpdate->count();
-        $oTrace->canceled_amount = $oTraceListToUpdate->sum('total_price');
+        $oTrace->canceled_issues += $oTraceList->count();
+        $oTrace->canceled_amount += $oTraceList->sum('total_price');
         $oTrace->stop_issue = $oProject->issue;
         $oTrace->stop_time = time();
         $oTrace->save();
         //update TraceLists with Project
         if ($oProject->tracelist()->exists()) {
-            //第一次的时候是没有的
             $oTraceListFromProject = $oProject->tracelist;
             $oTraceListFromProject->status = LotteryTraceList::STATUS_FINISHED;
             $oTraceListFromProject->save();
         }
+        if ($oTraceList->count() > 0) {
+            FrontendUsersAccount::traceWinStopAccount($oProject, $oTraceList->sum('total_price'), $oTrace);//中奖停止后的追号返款
+        }
     }
 
     /**
+     * private static function getTraceItems(Project $oProject, &$first)
+     * 追号逻辑变动   不管是第几期追号处理业务逻辑都一样   所以$first不需要了
      * @param  Project  $oProject
-     * @param  int  $first
      * @return mixed
      */
-    private static function getTraceItems(Project $oProject, &$first)
+    private static function getTraceItems(Project $oProject)
     {
-        $first = 0;
         $oTrace = LotteryTrace::where([
             ['user_id', '=', $oProject->user_id],
             ['lottery_sign', '=', $oProject->lottery_sign],
@@ -441,7 +448,6 @@ trait IssueCalculateLogic
                 ['lottery_sign', '=', $oProject->lottery_sign],
                 ['bet_number', '=', $oProject->bet_number],
             ])->first();
-            ++$first;
         }
         return $oTrace;
     }
