@@ -23,6 +23,34 @@ use Illuminate\Support\Facades\Log;
 
 trait IssueCalculateLogic
 {
+    private static $projectInsertCompileColumn = [
+        'user_id',
+        'username',
+        'top_id',
+        'rid',
+        'parent_id',
+        'is_tester',
+        'series_id',
+        'lottery_sign',
+        'method_sign',
+        'method_group',
+        'method_name',
+        'user_prize_group',
+        'bet_prize_group',
+        'mode',
+        'times',
+        'price',
+        'total_cost',
+        'bet_number',
+        'issue',
+        'prize_set',
+        'ip',
+        'proxy_ip',
+        'bet_from',
+        'challenge_prize',
+        'challenge',
+    ];
+
     /**
      * @param  string  $lottery_id
      * @param  string  $issue_no
@@ -373,9 +401,23 @@ trait IssueCalculateLogic
             'proxy_ip' => $oTraceList->proxy_ip,
             'bet_from' => $oTraceList->bet_from,
             'time_bought' => time(),
-            'status_flow' => Project::STATUS_FLOW_TRACE,
+            //'status_flow' => Project::STATUS_FLOW_TRACE,
         ];
     }
+    /**
+     * 从追号列表添加到 project 表
+     * @param  LotteryTraceList  $oTraceList
+     * @return array
+     */
+    private static function getProjectDataFromTraceLists(LotteryTraceList $oTraceList): array
+    {
+        $projectData = [];
+        foreach (self::$projectInsertCompileColumn as $column) {
+            $projectData[$column] = $oTraceList->$column;
+        }
+        return $projectData;
+    }
+
     /**
      * @param  LotteryTrace  $oTrace
      * @param  Project  $oProject
